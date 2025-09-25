@@ -10,14 +10,7 @@ TCP (SOCK_STREAM) sobre IPv4/IPv6. Servidor central con múltiples clientes conc
 - Modelo: cliente–servidor sobre TCP.
 - Roles: VIEWER (solo recibe), ADMIN (comandos y consultas).
 
-## 4. Telemetría (DATA)
-Formato: DATA speed=<kmh> battery=<pct> temp=<celsius> heading=<deg> ts=<ms_epoch>
-
-Frecuencia: cada 10 s. 
-
-Unidades: km/h, %, °C, grados (0–359), epoch ms.
-
-## 5. Operaciones
+## 4. Operaciones
 - HELLO <name>
 - AUTH <user> <pass>
 - CMD <SPEED_UP|SLOW_DOWN|TURN_LEFT|TURN_RIGHT>
@@ -25,7 +18,7 @@ Unidades: km/h, %, °C, grados (0–359), epoch ms.
 - BYE
 - DATA ... (servidor → clientes, cada 10 s)
 
-## 4. Mensajes (sintaxis y ejemplos)
+## 5. Mensajes (sintaxis y ejemplos)
 ### Identidad y rol
 **HELLO**
 
@@ -97,7 +90,14 @@ Errores: ERROR 403 not_admin
   
     OK bye y cierra.
 
-## 5. Reglas de Procedimiento
+## 6. Telemetría (DATA)
+Formato: DATA speed=<kmh> battery=<pct> temp=<celsius> heading=<deg> ts=<ms_epoch>
+
+Frecuencia: cada 10 s. 
+
+Unidades: km/h, %, °C, grados (0–359), epoch ms.
+
+## 7. Reglas de Procedimiento
 * Conexión TCP (3-way handshake) → servidor envía WELCOME y ROLE VIEWER.
 * Identificación (opcional): cliente envía HELLO.
 * Autenticación (opcional): AUTH para elevar a ADMIN.
@@ -106,13 +106,13 @@ Errores: ERROR 403 not_admin
 * Monitoreo: ADMIN puede consultar USERS.
 * Cierre: BYE o desconexión; el servidor quita al cliente de la lista.
 
-## 6. Errores
+## 8. Errores
 - 400 (missing_name, invalid_cmd, too_long, unknown_cmd)
 - 401 (invalid_credentials)
 - 403 (not_admin)
 - 501 (not_implemented)
 
-## 7. Matriz de Pruebas
+## 9. Matriz de Pruebas
 | ID | Caso | Precondición | Paso | Resultado esperado |
 | --- | --- | --- | --- | --- |
 | T1 | HELLO válido | Conexión TCP | `HELLO juan` | `WELCOME`, `ROLE VIEWER`, `OK hello juan` |
@@ -125,3 +125,26 @@ Errores: ERROR 403 not_admin
 | T8 | USERS como ADMIN | Rol ADMIN | `USERS` | `USERS count=n` + líneas `USER ...` + `OK users` |
 | T9 | Línea enorme | --- | línea >512B | `ERROR 400 too_long` (o cierre) |
 | T10 | Mensaje desconocido | --- | `PING` | `ERROR 400 unknown_cmd` |
+
+## 10. Anexos
+**Gramatica ABNF ligera**
+
+message   = request / response "\n"
+
+request   = hello / auth / cmd / users / bye
+hello     = "HELLO" SP name
+auth      = "AUTH" SP user SP pass
+cmd       = "CMD" SP ( "SPEED_UP" / "SLOW_DOWN" / "TURN_LEFT" / "TURN_RIGHT" )
+users     = "USERS"
+bye       = "BYE"
+
+response  = welcome / role / ok / error / ack / nack / data / userslist
+welcome   = "WELCOME" SP server_name SP "PROTO" SP "1.0"
+role      = "ROLE" SP ("ADMIN" / "VIEWER")
+ok        = "OK" SP detail
+error     = "ERROR" SP 3DIGIT SP detail
+ack       = "ACK" SP cmdverb SP "accepted"
+nack      = "NACK" SP cmdverb SP "reason=" reason
+data      = "DATA" SP "speed=" num SP "battery=" num SP "temp=" num SP "heading=" num SP "ts=" digits
+userslist = "USERS" SP "count=" digits *( CRLF "USER" SP idx SP "name=" name SP "ip=" ip SP "port=" digits SP "role=" role )
+
