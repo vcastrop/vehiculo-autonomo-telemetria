@@ -113,4 +113,15 @@ Errores: ERROR 403 not_admin
 - 501 (not_implemented)
 
 ## 7. Matriz de Pruebas
-[tabla T1–T10]
+| ID | Caso | Precondición | Paso | Resultado esperado |
+| --- | --- | --- | --- | --- |
+| T1 | HELLO válido | Conexión TCP | `HELLO juan` | `WELCOME`, `ROLE VIEWER`, `OK hello juan` |
+| T2 | HELLO sin nombre | Conexión TCP | `HELLO` | `ERROR 400 missing_name` |
+| T3 | AUTH ok | Conexión TCP | `AUTH admin 1234` | `ROLE ADMIN`, `OK auth` |
+| T4 | AUTH fail | Conexión TCP | `AUTH admin bad` | `ERROR 401 invalid_credentials` |
+| T5 | DATA periódica | Sesión abierta | Esperar 10 s | Llega `DATA ...` a la sesión |
+| T6 | CMD válido siendo ADMIN | Rol ADMIN | `CMD SPEED_UP` | `ACK SPEED_UP accepted` (o `NACK` si regla lo impide) |
+| T7 | CMD como VIEWER | Rol VIEWER | `CMD TURN_LEFT` | `ERROR 403 not_admin` |
+| T8 | USERS como ADMIN | Rol ADMIN | `USERS` | `USERS count=n` + líneas `USER ...` + `OK users` |
+| T9 | Línea enorme | --- | línea >512B | `ERROR 400 too_long` (o cierre) |
+| T10 | Mensaje desconocido | --- | `PING` | `ERROR 400 unknown_cmd` |
