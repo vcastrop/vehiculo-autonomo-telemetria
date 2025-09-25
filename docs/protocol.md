@@ -28,6 +28,7 @@ Unidades: km/h, %, °C, grados (0–359), epoch ms.
 ## 4. Mensajes (sintaxis y ejemplos)
 ### Identidad y rol
 **HELLO**
+
   C → S: HELLO <name>
 
   S → C:
@@ -40,17 +41,17 @@ Unidades: km/h, %, °C, grados (0–359), epoch ms.
 
 Errores: ERROR 400 missing_name
 
-AUTH
+**AUTH**
 
-C → S: AUTH <user> <pass>
+  C → S: AUTH <user> <pass>
 
-S → C:
+  S → C:
 
-ROLE ADMIN + OK auth (si credenciales correctas)
+      ROLE ADMIN + OK auth (si credenciales correctas)
 
-ERROR 401 invalid_credentials (si fallan)
+      ERROR 401 invalid_credentials (si fallan)
 
-Nota: el rol ADMIN queda asociado a la sesión (no a la IP), cumpliendo el requisito de identificación incluso si el admin cambia de IP/cliente.
+**Nota: el rol ADMIN queda asociado a la sesión (no a la IP), cumpliendo el requisito de identificación incluso si el admin cambia de IP/cliente.*
 
 ## 5. Reglas de Procedimiento
 * Conexión TCP (3-way handshake) → servidor envía WELCOME y ROLE VIEWER.
