@@ -49,9 +49,17 @@ Errores: ERROR 400 missing_name
 
       ROLE ADMIN + OK auth (si credenciales correctas)
 
-      ERROR 401 invalid_credentials (si fallan)
+Errores: ERROR 401 invalid_credentials (si fallan)
 
 **Nota: el rol ADMIN queda asociado a la sesión (no a la IP), cumpliendo el requisito de identificación incluso si el admin cambia de IP/cliente.*
+
+### Telemetría (difusión)
+
+**DATA** (enviado cada 10 s por el servidor a todos)
+
+  S → C: DATA speed=<kmh> battery=<pct> temp=<celsius> heading=<deg> ts=<ms_epoch>
+
+    Ej.: DATA speed=52.3 battery=89 temp=36.2 heading=175 ts=1737582012345
 
 ## 5. Reglas de Procedimiento
 * Conexión TCP (3-way handshake) → servidor envía WELCOME y ROLE VIEWER.
