@@ -54,12 +54,48 @@ Errores: ERROR 401 invalid_credentials (si fallan)
 **Nota: el rol ADMIN queda asociado a la sesión (no a la IP), cumpliendo el requisito de identificación incluso si el admin cambia de IP/cliente.*
 
 ### Telemetría (difusión)
-
 **DATA** (enviado cada 10 s por el servidor a todos)
 
   S → C: DATA speed=<kmh> battery=<pct> temp=<celsius> heading=<deg> ts=<ms_epoch>
 
     Ej.: DATA speed=52.3 battery=89 temp=36.2 heading=175 ts=1737582012345
+
+### Comandos (solo ADMIN)
+**CMD**
+
+  C (ADMIN) → S: CMD <SPEED_UP|SLOW_DOWN|TURN_LEFT|TURN_RIGHT>
+
+  S → C:
+
+    ACK <CMD> accepted
+
+    NACK <CMD> reason=<LOW_BATTERY|SPEED_LIMIT|INVALID_STATE|UNSUPPORTED>
+
+Errores: ERROR 400 invalid_cmd, ERROR 403 not_admin (si VIEWER intenta CMD)
+
+### Consulta de usuarios (solo ADMIN)
+**USERS**
+
+  C (ADMIN) → S: USERS
+
+  S → C:
+
+    USERS count=<n>
+
+    USER <i> name=<name> ip=<a.b.c.d> port=<p> role=<ADMIN|VIEWER> (una por usuario)
+
+    OK users
+
+Errores: ERROR 403 not_admin
+
+###Terminación
+**BYE**
+
+  C → S: BYE
+
+  S → C: 
+  
+    OK bye y cierra.
 
 ## 5. Reglas de Procedimiento
 * Conexión TCP (3-way handshake) → servidor envía WELCOME y ROLE VIEWER.
