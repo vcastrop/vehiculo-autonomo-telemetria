@@ -107,10 +107,10 @@ Errores: ERROR 403 not_admin
 * Cierre: BYE o desconexión; el servidor quita al cliente de la lista.
 
 ## 6. Errores
-400 (missing_name, invalid_cmd, too_long, unknown_cmd)
-401 (invalid_credentials)
-403 (not_admin)
-501 (not_implemented)
+- 400 (missing_name, invalid_cmd, too_long, unknown_cmd)
+- 401 (invalid_credentials)
+- 403 (not_admin)
+- 501 (not_implemented)
 
 ## 7. Matriz de Pruebas
 [tabla T1–T10]
