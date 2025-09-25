@@ -16,10 +16,15 @@ Unidades: km/h, %, °C, grados (0–359), epoch ms.
 
 ## 4. Operaciones
 HELLO <name> → WELCOME, ROLE VIEWER, OK hello <name> | ERROR 400 missing_name
+
 AUTH <user> <pass> → ROLE ADMIN, OK auth | ERROR 401 invalid_credentials
+
 CMD <SPEED_UP|SLOW_DOWN|TURN_LEFT|TURN_RIGHT> → ACK/NACK | ERROR 403 not_admin | ERROR 400 invalid_cmd
+
 USERS → USERS count=n + USER… + OK users | ERROR 403 not_admin
+
 BYE → OK bye y cierre
+
 DATA … (servidor → clientes)
 
 ## 5. Reglas de Procedimiento
