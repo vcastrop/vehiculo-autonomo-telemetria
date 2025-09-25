@@ -9,8 +9,8 @@ TCP (SOCK_STREAM) sobre IPv4/IPv6. Servidor central con múltiples clientes conc
 
 ## 3. Telemetría (DATA)
 Formato: DATA speed=<kmh> battery=<pct> temp=<celsius> heading=<deg> ts=<ms_epoch>
-
-Frecuencia: cada 10 s. Unidades: km/h, %, °C, grados (0–359), epoch ms.
+Frecuencia: cada 10 s. 
+Unidades: km/h, %, °C, grados (0–359), epoch ms.
 
 ## 4. Operaciones
 HELLO <name> → WELCOME, ROLE VIEWER, OK hello <name> | ERROR 400 missing_name
