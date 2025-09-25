@@ -129,22 +129,22 @@ Unidades: km/h, %, °C, grados (0–359), epoch ms.
 ## 10. Anexos
 **Gramatica ABNF ligera**
 
-message   = request / response "\n"
-
-request   = hello / auth / cmd / users / bye
-hello     = "HELLO" SP name
-auth      = "AUTH" SP user SP pass
-cmd       = "CMD" SP ( "SPEED_UP" / "SLOW_DOWN" / "TURN_LEFT" / "TURN_RIGHT" )
-users     = "USERS"
-bye       = "BYE"
-
-response  = welcome / role / ok / error / ack / nack / data / userslist
-welcome   = "WELCOME" SP server_name SP "PROTO" SP "1.0"
-role      = "ROLE" SP ("ADMIN" / "VIEWER")
-ok        = "OK" SP detail
-error     = "ERROR" SP 3DIGIT SP detail
-ack       = "ACK" SP cmdverb SP "accepted"
-nack      = "NACK" SP cmdverb SP "reason=" reason
-data      = "DATA" SP "speed=" num SP "battery=" num SP "temp=" num SP "heading=" num SP "ts=" digits
-userslist = "USERS" SP "count=" digits *( CRLF "USER" SP idx SP "name=" name SP "ip=" ip SP "port=" digits SP "role=" role )
+    message   = request / response "\n"
+    
+    request   = hello / auth / cmd / users / bye
+    hello     = "HELLO" SP name
+    auth      = "AUTH" SP user SP pass
+    cmd       = "CMD" SP ( "SPEED_UP" / "SLOW_DOWN" / "TURN_LEFT" / "TURN_RIGHT" )
+    users     = "USERS"
+    bye       = "BYE"
+    
+    response  = welcome / role / ok / error / ack / nack / data / userslist
+    welcome   = "WELCOME" SP server_name SP "PROTO" SP "1.0"
+    role      = "ROLE" SP ("ADMIN" / "VIEWER")
+    ok        = "OK" SP detail
+    error     = "ERROR" SP 3DIGIT SP detail
+    ack       = "ACK" SP cmdverb SP "accepted"
+    nack      = "NACK" SP cmdverb SP "reason=" reason
+    data      = "DATA" SP "speed=" num SP "battery=" num SP "temp=" num SP "heading=" num SP "ts=" digits
+    userslist = "USERS" SP "count=" digits *( CRLF "USER" SP idx SP "name=" name SP "ip=" ip SP "port=" digits SP "role=" role )
 
