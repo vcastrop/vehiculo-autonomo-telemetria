@@ -1,31 +1,56 @@
-# PROTO 1.0 — Protocolo de Telemetría para Vehículo Autónomo
+# Protocolo de Telemetría para Vehículo Autónomo — PROTO 1.0
 
-## 1. Transporte y Modelo
+## 1. Propósito y Alcance
+Difundir telemetría cada 10 s a clientes y recibir comandos de control de un administrador autenticado (TCP, sockets Berkeley, servidor en C).
+
+## 2. Transporte y Modelo
 TCP (SOCK_STREAM) sobre IPv4/IPv6. Servidor central con múltiples clientes concurrentes (1 hilo/cliente + 1 hilo difusor).
 
-## 2. Roles
-- VIEWER: recibe DATA cada 10 s.
-- ADMIN: AUTH exitoso → puede CMD y USERS. Rol asociado a la sesión.
+## 3. Modelo y Roles
+- Modelo: cliente–servidor sobre TCP.
+- Roles: VIEWER (solo recibe), ADMIN (comandos y consultas).
 
-## 3. Telemetría (DATA)
+## 4. Telemetría (DATA)
 Formato: DATA speed=<kmh> battery=<pct> temp=<celsius> heading=<deg> ts=<ms_epoch>
 
 Frecuencia: cada 10 s. 
 
 Unidades: km/h, %, °C, grados (0–359), epoch ms.
 
-## 4. Operaciones
-HELLO <name> → WELCOME, ROLE VIEWER, OK hello <name> | ERROR 400 missing_name
+## 5. Operaciones
+- HELLO <name>
+- AUTH <user> <pass>
+- CMD <SPEED_UP|SLOW_DOWN|TURN_LEFT|TURN_RIGHT>
+- USERS
+- BYE
+- DATA ... (servidor → clientes, cada 10 s)
 
-AUTH <user> <pass> → ROLE ADMIN, OK auth | ERROR 401 invalid_credentials
+## 4. Mensajes (sintaxis y ejemplos)
+### Identidad y rol
+**HELLO**
+  C → S: HELLO <name>
 
-CMD <SPEED_UP|SLOW_DOWN|TURN_LEFT|TURN_RIGHT> → ACK/NACK | ERROR 403 not_admin | ERROR 400 invalid_cmd
+  S → C:
 
-USERS → USERS count=n + USER… + OK users | ERROR 403 not_admin
+    WELCOME <server_name> PROTO 1.0
 
-BYE → OK bye y cierre
+    ROLE <ADMIN|VIEWER> (VIEWER por defecto)
 
-DATA … (servidor → clientes)
+    OK hello <name> (confirmación)
+
+Errores: ERROR 400 missing_name
+
+AUTH
+
+C → S: AUTH <user> <pass>
+
+S → C:
+
+ROLE ADMIN + OK auth (si credenciales correctas)
+
+ERROR 401 invalid_credentials (si fallan)
+
+Nota: el rol ADMIN queda asociado a la sesión (no a la IP), cumpliendo el requisito de identificación incluso si el admin cambia de IP/cliente.
 
 ## 5. Reglas de Procedimiento
 * Conexión TCP (3-way handshake) → servidor envía WELCOME y ROLE VIEWER.
