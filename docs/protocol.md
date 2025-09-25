@@ -28,7 +28,13 @@ BYE → OK bye y cierre
 DATA … (servidor → clientes)
 
 ## 5. Reglas de Procedimiento
-[secuencia 1..8]
+* Conexión TCP (3-way handshake) → servidor envía WELCOME y ROLE VIEWER.
+* Identificación (opcional): cliente envía HELLO.
+* Autenticación (opcional): AUTH para elevar a ADMIN.
+* Difusión periódica: servidor envía DATA a todas las sesiones cada 10 s.
+* Control: ADMIN envía CMD y recibe ACK/NACK.
+* Monitoreo: ADMIN puede consultar USERS.
+* Cierre: BYE o desconexión; el servidor quita al cliente de la lista.
 
 ## 6. Errores
 400 (missing_name, invalid_cmd, too_long, unknown_cmd)
