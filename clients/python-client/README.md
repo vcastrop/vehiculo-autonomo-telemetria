@@ -161,13 +161,13 @@ Todos los errores se muestran en el log y en ventanas de diálogo cuando es nece
 ## Comparación con el cliente Java
 
 Funcionalidades equivalentes:
-- ✅ Interfaz gráfica similar
-- ✅ Conexión TCP
-- ✅ Recepción de telemetría en tiempo real
-- ✅ Envío de todos los comandos del protocolo
-- ✅ Autenticación de administrador
-- ✅ Log de comunicación
-- ✅ Manejo de errores
+-  Interfaz gráfica similar
+-  Conexión TCP
+-  Recepción de telemetría en tiempo real
+-  Envío de todos los comandos del protocolo
+-  Autenticación de administrador
+-  Log de comunicación
+-  Manejo de errores
 
 Ventajas del cliente Python:
 - Código más conciso y legible
@@ -199,7 +199,3 @@ sudo apt-get install python3-tk
 - Verificar la conexión en el log
 - Verificar que el servidor esté enviando datos cada 10 segundos
 - Revisar el log del servidor
-
-## Autor
-
-Cliente desarrollado como parte del Proyecto de Telemática - Vehículo Autónomo.
