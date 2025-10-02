@@ -1,0 +1,8 @@
+# Requisitos para el cliente Python de telemetría
+# Python 3.6 o superior
+
+# Nota: Tkinter viene incluido por defecto con Python
+# En Linux, si no está instalado, ejecutar:
+# sudo apt-get install python3-tk
+
+# No se requieren dependencias externas adicionales
