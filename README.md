@@ -64,7 +64,7 @@ El sistema soporta múltiples clientes concurrentes, roles de **VIEWER** y **ADM
 
 ## Ejecutar el server en Windows
 
-### 1) Requisitos (elige una opción)
+### 1) Requisitos 
 - **Opción A – GCC (recomendado):** instalar **MSYS2/MinGW** o **Git Bash** con `gcc` en el PATH.
 - **Opción B – MSVC:** usar **Developer Command Prompt for Visual Studio** (`cl` en el PATH).
 
@@ -101,7 +101,7 @@ nc -v <IP_DE_WINDOWS> 9000
 
 ### 1) en powershell
 
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
 
 ### 2) cliente rapido  pega esto
 $tcp=New-Object Net.Sockets.TcpClient('127.0.0.1',9000)

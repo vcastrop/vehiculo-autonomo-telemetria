@@ -265,14 +265,31 @@ static void handle_cmd(client_t *cli, const char *rest) {
     // Aplicamos cambios al estado según el comando
     int ok = 1;
     EnterCriticalSection(&cs_state);
-    if      (strcmp(cmd, "SPEED_UP")   == 0) vstate.speed_kmh   += 5.0;
-    else if (strcmp(cmd, "SLOW_DOWN")  == 0) vstate.speed_kmh   -= 5.0;
+    if(strcmp(cmd, "SPEED_UP")    == 0) {
+        if (vstate.speed_kmh + 5.0 > 120.0) {
+            LeaveCriticalSection(&cs_state);
+            send_line(cli->sock, "NACK speed_limit");
+            log_line("TX", cli->ip, cli->port, "TX", "NACK speed_limit");
+            return;
+        }
+        vstate.speed_kmh += 5.0;
+    }
+    else if (strcmp(cmd, "SLOW_DOWN") == 0) {
+        double new_speed = vstate.speed_kmh - 5.0;
+        if (new_speed < 0.0) {
+            LeaveCriticalSection(&cs_state);
+            send_line(cli->sock, "NACK min_speed");
+            log_line("TX", cli->ip, cli->port, "TX", "NACK min_speed");
+            return;
+        }
+        vstate.speed_kmh = new_speed;
+    }
     else if (strcmp(cmd, "TURN_LEFT")  == 0) vstate.heading_deg -= 15.0;
     else if (strcmp(cmd, "TURN_RIGHT") == 0) vstate.heading_deg += 15.0;
     else ok = 0;
 
     if (vstate.speed_kmh < 0)   vstate.speed_kmh = 0;
-    if (vstate.speed_kmh > 150) vstate.speed_kmh = 150;
+    if (vstate.speed_kmh > 120) vstate.speed_kmh = 120;
     while (vstate.heading_deg < 0)    vstate.heading_deg += 360.0;
     while (vstate.heading_deg >= 360) vstate.heading_deg -= 360.0;
     LeaveCriticalSection(&cs_state);
