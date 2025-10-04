@@ -1,96 +1,81 @@
-// src/server.c
-// Servidor TCP de telemetría con roles, AUTH, comandos y logging (Windows/Winsock2)
-
 // --- Plataforma mínima de Windows (opcional, 0x0601 = Windows 7 o superior)
 #define _WIN32_WINNT 0x0601
 
 // --- Cabeceras de Windows para sockets y utilidades
-#include <winsock2.h>     // socket(), bind(), listen(), accept(), send(), recv()
-#include <ws2tcpip.h>     // inet_ntop / InetNtopA, estructuras extendidas
-#include <windows.h>      // CreateThread, HANDLE, Sleep, CRITICAL_SECTION
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
 
 // --- Cabeceras estándar de C
-#include <stdio.h>        // printf, fprintf
-#include <stdlib.h>       // atoi, malloc, free, rand, srand
-#include <string.h>       // memset, memcpy, strcmp, strncpy
-#include <time.h>         // time() para rand()
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
 #endif
 
-
 /* =============================== Configuración general =============================== */
 
-// Tamaños y constantes del protocolo
-#define MAX_LINE            1024           // tamaño máximo de una línea de texto
-#define BACKLOG             16             // cola de listen()
-#define TELEMETRY_PERIOD_MS (10*1000)      // periodo de telemetría en milisegundos
-#define PROTO_VERSION       "1.0"          // versión textual del protocolo
+#define MAX_LINE            1024
+#define BACKLOG             16
+#define TELEMETRY_PERIOD_MS (10*1000)
+#define PROTO_VERSION       "1.0"
 
-// Roles de cliente
 typedef enum {
-    ROLE_VIEWER = 0,       // rol por defecto: solo ve telemetría
-    ROLE_ADMIN  = 1        // rol tras AUTH admin 1234: puede enviar CMD y USERS
+    ROLE_VIEWER = 0,
+    ROLE_ADMIN  = 1
 } role_t;
 
-// Estructura de cliente conectado (lista enlazada)
 typedef struct client_s {
-    SOCKET             sock;               // socket del cliente
-    char               ip[64];             // ip en texto (ej: "127.0.0.1")
-    int                port;               // puerto remoto
-    role_t             role;               // rol actual (VIEWER/ADMIN)
-    char               name[64];           // nombre opcional (HELLO <name>)
-    int                alive;              // flag vivo (1=activo)
-    struct client_s   *next;               // siguiente en la lista
+    SOCKET             sock;
+    char               ip[64];
+    int                port;
+    role_t             role;
+    char               name[64];
+    int                alive;
+    struct client_s   *next;
 } client_t;
 
-// Estado simulado del vehículo (para DATA ...)
 typedef struct {
-    double speed_kmh;       // velocidad en km/h
-    double battery_pc;      // batería en %
-    double temp_c;          // temperatura en °C
-    double heading_deg;     // rumbo en grados [0,360)
+    double speed_kmh;
+    double battery_pc;
+    double temp_c;
+    double heading_deg;
 } vehicle_state_t;
 
 /* =============================== Globales =============================== */
 
-// Lista de clientes conectados + mutex
-static client_t *clients = NULL;           // cabeza de la lista enlazada
-static CRITICAL_SECTION cs;                // sección crítica para proteger la lista
+static client_t *clients = NULL;
+static CRITICAL_SECTION cs;
 
-// Estado global del vehículo + mutex propio (podríamos reutilizar cs, pero mejor separado)
 static vehicle_state_t vstate = { 50.0, 100.0, 35.0, 90.0 };
 static CRITICAL_SECTION cs_state;
 
-// Bandera global de ejecución del servidor
 static volatile int running = 1;
 
-// Handler del hilo de telemetría (para esperarlo al cerrar)
 static HANDLE hTel = NULL;
 
-// Soporte Winsock
 static WSADATA wsa;
 
 // --- Logging a archivo opcional + consola (FASE 7)
-static FILE *g_logfp = NULL;               // si argv[2] trae ruta, escribimos aquí también
+static FILE *g_logfp = NULL;
 
 /* =============================== Utilidades =============================== */
 
-// Tiempo actual en milisegundos desde época Unix (aproximado en Windows)
 static long long now_ms(void) {
     FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);                 // 100-ns desde 1601
-    ULARGE_INTEGER uli;                           // lo convertimos a entero
+    GetSystemTimeAsFileTime(&ft);
+    ULARGE_INTEGER uli;
     uli.LowPart  = ft.dwLowDateTime;
     uli.HighPart = ft.dwHighDateTime;
-    unsigned long long ms_1601 = uli.QuadPart / 10000ULL;     // 100-ns -> ms
-    const unsigned long long EPOCH_DIFF = 11644473600000ULL;  // ms entre 1601 y 1970
+    unsigned long long ms_1601 = uli.QuadPart / 10000ULL;
+    const unsigned long long EPOCH_DIFF = 11644473600000ULL;
     if (ms_1601 < EPOCH_DIFF) return 0;
-    return (long long)(ms_1601 - EPOCH_DIFF);     // ms desde 1970
+    return (long long)(ms_1601 - EPOCH_DIFF);
 }
 
-// Quita \r y \n del final de un string (para limpiar líneas)
 static void rstrip_newline(char *s) {
     if (!s) return;
     size_t n = strlen(s);
@@ -100,19 +85,17 @@ static void rstrip_newline(char *s) {
     }
 }
 
-// Recorta espacios al inicio y fin
 static void trim(char *s) {
     if (!s) return;
-    // recorta inicio
+
     char *p = s;
     while (*p == ' ' || *p == '\t') p++;
     if (p != s) memmove(s, p, strlen(p) + 1);
-    // recorta final
+
     size_t n = strlen(s);
     while (n > 0 && (s[n-1] == ' ' || s[n-1] == '\t')) { s[n-1]='\0'; n--; }
 }
 
-// Envía una línea agregando \n (para netcat) o \r\n (si prefieres). Aquí uso \n.
 static int send_line(SOCKET s, const char *line) {
     char buf[MAX_LINE + 4];
     int n = _snprintf(buf, sizeof(buf), "%s\n", line ? line : "");
@@ -126,17 +109,16 @@ static int send_line(SOCKET s, const char *line) {
     return 0;
 }
 
-// LOG unificado a consola y, si corresponde, a archivo (FASE 7)
 static void log_line(const char *tag, const char *ip, int port, const char *dir, const char *msg) {
-    long long ts = now_ms();                    // timestamp en ms
+    long long ts = now_ms();
     if (!tag) tag = "LOG";
     if (!ip)  ip  = "-";
     if (!dir) dir = "-";
     if (!msg) msg = "";
-    // sale por consola
+
     fprintf(stdout, "[%s %lld %s:%d %s] %s\n", tag, ts, ip, port, dir, msg);
     fflush(stdout);
-    // y opcionalmente a archivo
+
     if (g_logfp) {
         fprintf(g_logfp, "[%s %lld %s:%d %s] %s\n", tag, ts, ip, port, dir, msg);
         fflush(g_logfp);
@@ -145,41 +127,38 @@ static void log_line(const char *tag, const char *ip, int port, const char *dir,
 
 /* =============================== Lista de clientes =============================== */
 
-// Inserta cliente al inicio (O(1))
 static void add_client(client_t *c) {
-    EnterCriticalSection(&cs);        // bloqueo de lista
-    c->next = clients;                // enlazo al principio
-    clients = c;                      // muevo cabeza
-    LeaveCriticalSection(&cs);        // libero
+    EnterCriticalSection(&cs);
+    c->next = clients;
+    clients = c;
+    LeaveCriticalSection(&cs);
 }
 
-// Elimina por socket (cuando falla hilo o desconecta)
 static void remove_client_by_sock(SOCKET s) {
     EnterCriticalSection(&cs);
     client_t **pp = &clients;
     while (*pp) {
         if ((*pp)->sock == s) {
             client_t *dead = *pp;
-            *pp = (*pp)->next;        // saco de la lista
+            *pp = (*pp)->next;
             LeaveCriticalSection(&cs);
-            closesocket(dead->sock);  // cierro socket
-            free(dead);               // libero memoria
+            closesocket(dead->sock);
+            free(dead);
             return;
         }
-        pp = &((*pp)->next);          // avanzo
+        pp = &((*pp)->next);
     }
     LeaveCriticalSection(&cs);
 }
 
-// Recorre todos los clientes y envía una línea (DATA o broadcast). Agrega logs TX por cliente.
 static void broadcast_line(const char *line) {
     EnterCriticalSection(&cs);
     for (client_t *c = clients; c; c = c->next) {
         if (c->alive && c->sock != INVALID_SOCKET) {
-            int r = send_line(c->sock, line);              // envío a este cliente
+            int r = send_line(c->sock, line);
             if (r == 0) {
                 char dbg[200]; _snprintf(dbg, sizeof(dbg), "%.180s", line);
-                log_line("TX", c->ip, c->port, "TX", dbg); // LOG TX por cliente (FASE 7)
+                log_line("TX", c->ip, c->port, "TX", dbg);
             }
         }
     }
@@ -188,44 +167,39 @@ static void broadcast_line(const char *line) {
 
 /* =============================== Telemetría periódica =============================== */
 
-// Hilo que cada 10s simula y difunde "DATA speed=... battery=... temp=... heading=... ts=..."
 static DWORD WINAPI telemetry_thread(LPVOID param) {
-    (void)param; // no lo usamos
+    (void)param;
     while (running) {
-        Sleep(TELEMETRY_PERIOD_MS);  // esperamos el periodo
+        Sleep(TELEMETRY_PERIOD_MS);
 
-        // Modificamos el estado un poquito para que cambie en el tiempo
         EnterCriticalSection(&cs_state);
-        vstate.speed_kmh   += ((rand()%11) - 5) * 0.5;  // -2.5..+2.5
+        vstate.speed_kmh   += ((rand()%11) - 5) * 0.5;
         if (vstate.speed_kmh < 0)   vstate.speed_kmh = 0;
         if (vstate.speed_kmh > 120) vstate.speed_kmh = 120;
 
-        vstate.battery_pc  -= 0.2;                      // baja despacio
+        vstate.battery_pc  -= 0.2;
         if (vstate.battery_pc < 0) vstate.battery_pc = 0;
 
-        vstate.temp_c      += ((rand()%7) - 3) * 0.2;   // -0.6..+0.6
+        vstate.temp_c      += ((rand()%7) - 3) * 0.2;
         if (vstate.temp_c < 20) vstate.temp_c = 20;
         if (vstate.temp_c > 60) vstate.temp_c = 60;
 
-        vstate.heading_deg += ((rand()%21) - 10);       // -10..+10
+        vstate.heading_deg += ((rand()%21) - 10);
         while (vstate.heading_deg < 0)    vstate.heading_deg += 360.0;
         while (vstate.heading_deg >= 360) vstate.heading_deg -= 360.0;
 
-        // Tomamos una foto del estado y liberamos el candado
         double spd = vstate.speed_kmh;
         double bat = vstate.battery_pc;
         double tmp = vstate.temp_c;
         double hdg = vstate.heading_deg;
         LeaveCriticalSection(&cs_state);
 
-        // Construimos la línea DATA con timestamp en ms
         long long ts = now_ms();
         char line[256];
         _snprintf(line, sizeof(line),
             "DATA speed=%.1f battery=%.1f temp=%.1f heading=%.1f ts=%lld",
             spd, bat, tmp, hdg, ts);
 
-        // Difundimos a todos los clientes conectados
         broadcast_line(line);
     }
     return 0;
@@ -233,25 +207,22 @@ static DWORD WINAPI telemetry_thread(LPVOID param) {
 
 /* =============================== Lógica de comandos por cliente =============================== */
 
-// Ejecuta un CMD ... (solo ADMIN). Envía ACK/NACK y deja logs TX.
 static void handle_cmd(client_t *cli, const char *rest) {
-    if (!rest || !*rest) {                                // si no vino argumento
-        send_line(cli->sock, "ERROR 400 invalid_cmd");    // error genérico
+    if (!rest || !*rest) {
+        send_line(cli->sock, "ERROR 400 invalid_cmd");
         log_line("TX", cli->ip, cli->port, "TX", "ERROR 400 invalid_cmd");
         return;
     }
-    if (cli->role != ROLE_ADMIN) {                        // si no es admin, prohibido
+    if (cli->role != ROLE_ADMIN) {
         send_line(cli->sock, "ERROR 403 not_admin");
         log_line("TX", cli->ip, cli->port, "TX", "ERROR 403 not_admin");
         return;
     }
 
-    // Copiamos el comando y lo normalizamos
     char cmd[64]; _snprintf(cmd, sizeof(cmd), "%.63s", rest);
     trim(cmd);
     for (char *p = cmd; *p; ++p) *p = (char)toupper(*p);
 
-    // Si la batería está <10%, rechazamos o
     EnterCriticalSection(&cs_state);
     double bat = vstate.battery_pc;
     LeaveCriticalSection(&cs_state);
@@ -261,7 +232,6 @@ static void handle_cmd(client_t *cli, const char *rest) {
         return;
     }
 
-    // Aplicamos cambios al estado según el comando
     int ok = 1;
     EnterCriticalSection(&cs_state);
     if(strcmp(cmd, "SPEED_UP")    == 0) {
@@ -303,7 +273,6 @@ static void handle_cmd(client_t *cli, const char *rest) {
     }
 }
 
-// Envía lista de usuarios (solo ADMIN)
 static void handle_users(client_t *cli) {
     if (cli->role != ROLE_ADMIN) {
         send_line(cli->sock, "ERROR 403 not_admin");
@@ -326,17 +295,11 @@ static void handle_users(client_t *cli) {
 
 /* =============================== Hilo por cliente =============================== */
 
-// Recibe del socket en bloques y retorna líneas completas (acumulando hasta '\n').
-// Devuelve:
-//   >0 = longitud de línea (out ya sin \r\n)
-//    0 = peer cerró
-//   -1 = error
 static int recv_line_accum(SOCKET s, char *out, int outsz) {
-    // buffers thread-local para cada hilo de cliente
+
     static __thread char acc[2048];
     static __thread int  acc_len = 0;
 
-    // buscamos '\n' en lo acumulado
     for (;;) {
         for (int i = 0; i < acc_len; ++i) {
             if (acc[i] == '\n') {
@@ -344,7 +307,7 @@ static int recv_line_accum(SOCKET s, char *out, int outsz) {
                 if (len >= outsz) len = outsz - 1;
                 memcpy(out, acc, len);
                 out[len] = '\0';
-                // corremos el resto hacia adelante
+
                 int rest = acc_len - (i + 1);
                 memmove(acc, acc + i + 1, rest);
                 acc_len = rest;
@@ -352,12 +315,12 @@ static int recv_line_accum(SOCKET s, char *out, int outsz) {
                 return len;
             }
         }
-        // si no había '\n', leemos más del socket
+
         int r = recv(s, acc + acc_len, (int)sizeof(acc) - acc_len, 0);
-        if (r == 0) return 0;                 // peer cerró
-        if (r == SOCKET_ERROR) return -1;     // error
+        if (r == 0) return 0;
+        if (r == SOCKET_ERROR) return -1;
         acc_len += r;
-        if (acc_len >= (int)sizeof(acc) - 1) { // línea larguísima: devolvemos lo que haya
+        if (acc_len >= (int)sizeof(acc) - 1) {
             int len = (outsz - 1 < acc_len) ? (outsz - 1) : acc_len;
             memcpy(out, acc, len);
             out[len] = '\0';
@@ -368,18 +331,17 @@ static int recv_line_accum(SOCKET s, char *out, int outsz) {
     }
 }
 
-// Hilo dedicado a un cliente: parsea líneas y responde
 static DWORD WINAPI client_thread(LPVOID param) {
-    client_t *cli = (client_t*)param;          // el cliente asociado a este hilo
-    SOCKET s = cli->sock;                      // socket del cliente
+    client_t *cli = (client_t*)param;
+    SOCKET s = cli->sock;
 
     // --- Envío de bienvenida inicial (Fase 2)
     {
         char banner[64];
         _snprintf(banner, sizeof(banner), "WELCOME TelemetryServer PROTO %s", PROTO_VERSION);
         send_line(s, banner);
-        log_line("TX", cli->ip, cli->port, "TX", banner);   // LOG TX de banner
-        // rol inicial
+        log_line("TX", cli->ip, cli->port, "TX", banner);
+
         send_line(s, "ROLE VIEWER");
         log_line("TX", cli->ip, cli->port, "TX", "ROLE VIEWER");
     }
@@ -387,34 +349,31 @@ static DWORD WINAPI client_thread(LPVOID param) {
     // --- Bucle principal: leer líneas y actuar
     char line[MAX_LINE];
     for (;;) {
-        int r = recv_line_accum(s, line, sizeof(line));   // recibimos una línea
-        if (r == 0) {                                     // peer cerró
+        int r = recv_line_accum(s, line, sizeof(line));
+        if (r == 0) {
             log_line("INFO", cli->ip, cli->port, "CLOSE", "peer_closed");
             break;
-        } else if (r < 0) {                               // error de socket
+        } else if (r < 0) {
             log_line("ERROR", cli->ip, cli->port, "RX", "recv_error");
             break;
         }
 
-        // LOG RX de lo que llegó
         log_line("RX", cli->ip, cli->port, "RX", line);
 
-        // limpiamos espacios
         trim(line);
-        if (!*line) continue; // línea vacía → ignoramos
+        if (!*line) continue;
 
-        // separamos comando y resto
         char *p = line;
         char *cmd = p;
         while (*p && *p != ' ' && *p != '\t') p++;
         char *rest = NULL;
         if (*p) { *p = '\0'; rest = p + 1; } else { rest = p; }
         if (rest) trim(rest);
-        for (char *q = cmd; *q; ++q) *q = (char)toupper(*q); // comando a MAYUS
+        for (char *q = cmd; *q; ++q) *q = (char)toupper(*q);
 
         // --- Conmutador por comando
         if (strcmp(cmd, "HELLO") == 0) {
-            // guardamos nombre si vino
+
             if (rest && *rest) {
                 _snprintf(cli->name, sizeof(cli->name), "%.63s", rest);
                 trim(cli->name);
@@ -425,11 +384,11 @@ static DWORD WINAPI client_thread(LPVOID param) {
             log_line("TX", cli->ip, cli->port, "TX", out);
         }
         else if (strcmp(cmd, "AUTH") == 0) {
-            // esperamos AUTH user pass  (para pruebas: admin 1234)
+
             char user[64] = {0}, pass[64] = {0};
             if (rest && *rest) {
                 _snprintf(user, sizeof(user), "%.63s", rest);
-                // separar user y pass
+
                 char *sp = user;
                 while (*sp && *sp != ' ' && *sp != '\t') sp++;
                 if (*sp) { *sp = '\0'; _snprintf(pass, sizeof(pass), "%.63s", sp + 1); trim(pass); }
@@ -464,9 +423,8 @@ static DWORD WINAPI client_thread(LPVOID param) {
         }
     }
 
-    // Al salir, marcamos muerto y lo removemos de la lista
     cli->alive = 0;
-    remove_client_by_sock(s);  // cierra y libera
+    remove_client_by_sock(s);
     return 0;
 }
 
@@ -551,41 +509,38 @@ int main(int argc, char **argv) {
         SOCKET cfd = accept(srv, (struct sockaddr*)&cli, &clen);
         if (cfd == INVALID_SOCKET) {
             int e = WSAGetLastError();
-            if (e == WSAEINTR) continue;           // interrupción
+            if (e == WSAEINTR) continue;
             fprintf(stderr,"accept err %d\n", e);
-            break;                                  // salimos del while si es error grave
+            break;
         }
-        // Creamos objeto cliente y rellenamos datos
+
         client_t *cliobj = (client_t*)calloc(1, sizeof(client_t));
         cliobj->sock = cfd;
         InetNtopA(AF_INET, &cli.sin_addr, cliobj->ip, sizeof(cliobj->ip));
         cliobj->port = ntohs(cli.sin_port);
-        cliobj->role = ROLE_VIEWER;                 // por defecto VIEWER
+        cliobj->role = ROLE_VIEWER;
         strncpy(cliobj->name, "anon", sizeof(cliobj->name)-1);
         cliobj->alive = 1;
 
-        // Añadimos a la lista global
         add_client(cliobj);
 
-        // LOG de aceptación de cliente (FASE 7)
         log_line("INFO", cliobj->ip, cliobj->port, "ACCEPT", "connected");
 
-        // Lanzamos hilo de cliente
         HANDLE h = CreateThread(NULL, 0, client_thread, cliobj, 0, NULL);
         if (!h) {
-            // Si falla, lo eliminamos de la lista y cerramos su socket
+
             fprintf(stderr,"CreateThread client failed\n");
             remove_client_by_sock(cfd);
-            closesocket(cfd);                       // cierre explícito (FASE 7 mejora)
+            closesocket(cfd);
         } else {
-            CloseHandle(h);                         // no esperamos al hilo (no join)
+            CloseHandle(h);
         }
     }
 
     // --- Señalizamos parada y esperamos al hilo de telemetría (cierre limpio)
     running = 0;
     if (hTel) {
-        WaitForSingleObject(hTel, 2000);           // esperamos hasta 2s
+        WaitForSingleObject(hTel, 2000);
         CloseHandle(hTel);
         hTel = NULL;
     }
