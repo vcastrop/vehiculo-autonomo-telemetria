@@ -1,6 +1,5 @@
 // src/server.c
 // Servidor TCP de telemetría con roles, AUTH, comandos y logging (Windows/Winsock2)
-// Comentado "en estilo estudiante": cada parte explica qué hace y por qué.
 
 // --- Plataforma mínima de Windows (opcional, 0x0601 = Windows 7 o superior)
 #define _WIN32_WINNT 0x0601
