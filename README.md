@@ -93,15 +93,16 @@ ncat <direccion ip> 8080
 
 Nota: en <direccion ip> escribe 127.0.0.1 si el cliente es en la misma maquina donde corre el servidor, si el cliente esta en otra maquina dentro de la misma red escribe la ip de la maquina donde corre el servidor. 
 
-Nota 2: para averiguar la ip --> ipconfig (windows) --> ifconfig 
+Nota 2: para averiguar la ip --> ipconfig (windows) --> ifconfig  (linux/macOS)
 
 Al conectarte, el servidor envía:
 
 WELCOME TelemetryServer PROTO 1.0
 ROLE VIEWER
 
-
 El cliente empieza como VIEWER por defecto.
+
+---
 
 ### 5) Telemetría automática
 
@@ -122,10 +123,12 @@ heading grados normalizados (0–360),
 
 ts timestamp en milisegundos.
 
+---
+
 ## Informe del Proyecto
 
 Puedes consultar el informe completo aquí:  
-[Abrir Informe de Proyecto (PDF)](docs/informe (1).pdf)
+[Abrir Informe de Proyecto (PDF)](informe (1).pdf)
 
 ---
 
