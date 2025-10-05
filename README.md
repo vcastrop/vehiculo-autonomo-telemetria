@@ -1,132 +1,135 @@
-# Proyecto de Servidor de Telemetría TCP en C
+# Proyecto: Servidor TCP de Telemetría de Vehículo Autónomo
 
-informe proyecto
+Este proyecto implementa un **servidor TCP en C** que simula la telemetría de un vehículo autónomo.  
+Permite múltiples clientes concurrentes, manejo de roles (ADMIN y VIEWER), autenticación, comandos de control, transmisión periódica de datos y registro de eventos en consola y archivo de log.
 
-https://docs.google.com/document/d/1ALgj_yQlZgh9OJZcsmzTHs214VE6zaSvpqmTf_rAIws/edit?usp=sharing
+---
 
-referencias útiles mientrass
+## Tabla de Contenidos
+- [Descripción General](#descripción-general)
+- [Guia de ejecución Servidor](#Guia-de-ejecución-Servidor)
+- [Informe del Proyecto](#Informe-del-Proyecto)
+- [Autoría](#autoría)
 
-- https://www.rfc-editor.org/rfc/rfc793.html
-- https://man7.org/linux/man-pages/man7/socket.7.html
-- https://man7.org/linux/man-pages/man7/socket.7.html
-- https://stefanogassmann.github.io/BGNETSpanish/
+---
 
-Este proyecto implementa un **servidor de telemetría** en lenguaje C utilizando **sockets TCP (Winsock2 en Windows)** y **hilos (Win32 threads)**.  
-El servidor simula un vehículo autónomo que transmite datos de **velocidad, batería, temperatura y rumbo** cada 10 segundos a todos los clientes conectados.
+## Descripción General
 
-El sistema soporta múltiples clientes concurrentes, roles de **VIEWER** y **ADMIN**, autenticación, comandos de control remoto y logging de la actividad.
+El servidor se ejecuta sobre **Windows (Winsock2)** y permite la conexión de varios clientes mediante **sockets TCP**.  
+Cada cliente puede autenticarse, enviar comandos o solo observar la telemetría del vehículo, dependiendo de su rol.
 
-    Que hace este programa (resumen):
-    ---------------------------------
-    - Crea un servidor TCP (SOCK_STREAM) en el puerto dado por línea de comandos.
-    - Acepta múltiples clientes concurrentes (un hilo por cliente).
-    - Difunde cada 10 segundos una línea de telemetría a TODOS los clientes conectados:
-          DATA speed=<x> battery=<y> temp=<z> heading=<w> ts=<ms>
-    - Soporta un protocolo de texto simple con comandos:
-          HELLO <name>
-          AUTH <user> <pass>        # admin 1234 eleva el rol a ADMIN
-          CMD <SPEED_UP|SLOW_DOWN|TURN_LEFT|TURN_RIGHT>   # solo ADMIN
-          USERS                     # solo ADMIN, lista clientes
-          BYE                       # cierre limpio
-      Respuestas: OK, ERROR, ACK, NACK, WELCOME, ROLE ...
+El sistema cumple con los requisitos del informe:
+- Comunicación TCP tipo SOCK_STREAM.
+- Envío de telemetría cada 10 segundos a todos los clientes.
+- Roles ADMIN/VIEWER con autenticación (`AUTH admin 1234`).
+- Comandos restringidos al rol ADMIN.
+- Logging completo en consola y archivo opcional.
+- Manejo concurrente de clientes mediante hilos (WinAPI).
 
-    - Roles: VIEWER (por defecto) y ADMIN (tras AUTH correcto).
-      Si un VIEWER intenta mandar CMD → ERROR 403 not_admin
+---
 
-    - Logging: imprime a consola y opcionalmente a archivo (segundo argumento).
-      Formato por línea: [TAG timestamp ip:puerto DIR] mensaje
+## Guia de ejecución Servidor
 
-    Cómo compilar (Windows con MinGW/MSYS2):
-    ---------------------------------------
-      gcc -Wall -O2 -o server src/server.c -lws2_32
+### 1) Clonar el repositorio
+git clone <URL_DEL_REPO>
+cd <CARPETA_DEL_REPO>
 
-    Cómo ejecutar:
-    --------------
-      ./server <puerto> [ruta_log]
-      Ejemplo:
-        ./server 9000 logs/server.log
+### 2) Compilar
+Opción A — GCC (MinGW)
+gcc server.c -o server.exe -lws2_32
+gcc -Wall -O2 -o server src/server.c -lws2_32
 
-    Cómo probar con netcat/ncat:
-    ----------------------------
-      ncat 127.0.0.1 9000
-      (verás WELCOME y ROLE)
-      AUTH admin 1234
-      CMD SPEED_UP
-      (cada 10 s verás DATA ... en cualquier cliente conectado)
+Opción B — Visual Studio (MSVC)
 
-    Notas técnicas:
-    ---------------
-    - Este código usa Win32/Winsock2 y CRITICAL_SECTION como mutex.
-    - El servidor maneja líneas terminadas en \n o \r\n. Siempre envía con \r\n.
-    - El hilo de telemetría recorre la lista enlazada de clientes (protegida por mutex)
-      y envía DATA a todos los sockets conectados.
+Compila server.c en un proyecto de consola. 
+
+No hace falta configurar librerías adicionales.
+
+Requisitos: Windows 7+; tener MinGW o Visual Studio instalados.
+
+### 3) Iniciar el servidor
+Sintaxis
+
+server.exe <puerto> [archivo_log]
+
+Ejemplos
+
+Solo consola:
+
+server.exe 8080
 
 
-## Ejecutar el server en Windows
+Consola + archivo de log:
 
-### 1) Requisitos 
-- **Opción A – GCC (recomendado):** instalar **MSYS2/MinGW** o **Git Bash** con `gcc` en el PATH.
-- **Opción B – MSVC:** usar **Developer Command Prompt for Visual Studio** (`cl` en el PATH).
-
-> Si no quieres instalar nada extra, puedes compilar desde el **Developer Command Prompt** (Visual Studio Community es gratis).
-
-### 2) Compilar y ejecutar (desde la carpeta `telemetria/`)
-**Con GCC (MSYS2/MinGW/Git Bash):**
-```bash
-mkdir -p logs
-gcc -Wall -O2 -D_WIN32_WINNT=0x0601 -o server src/server.c -lws2_32
-./server 9000 logs/server.log
-```
-Con MSVC (Developer Command Prompt):
-
-mkdir logs
-cl /nologo /W3 /O2 /D_WIN32_WINNT=0x0601 src\server.c ws2_32.lib /Fe:server.exe
-server.exe 9000 logs\server.log
-
-Salida esperada al iniciar:
-
-[INFO ... 0.0.0.0:9000 LISTEN] server_ready
-
-## Probar como cliente en kali linux (o WSL)
-
-### 1) Instalar netcat
-sudo apt update
-sudo apt install -y netcat-openbsd
-
-### 2) conectarte al servidur usando la ipv4 de tu pc windows
-
-nc -v <IP_DE_WINDOWS> 9000
-
-## Probar como cliente en Windows (Git Bash o PowerShell)
-
-### 1) en powershell
+server.exe 8080 log.txt
 
 
+El servidor escucha en 0.0.0.0:<puerto> y acepta múltiples clientes concurrentes.
 
-### 2) cliente rapido  pega esto
-$tcp=New-Object Net.Sockets.TcpClient('127.0.0.1',9000)
-$ns=$tcp.GetStream();$r=New-Object IO.StreamReader($ns)
-$w=New-Object IO.StreamWriter($ns);$w.NewLine="`n";$w.AutoFlush=$true
-Start-Job {param($rr)while($true){$l=$rr.ReadLine();if($null-ne $l){Write-Host $l}else{break}}} -Arg $r | Out-Null
-# Escribe tus comandos:
-# HELLO Vale
-# AUTH admin 1234
-# CMD SPEED_UP
-# USERS
-# BYE
+log.txt registra lo mismo que la consola (timestamp, IP:puerto, direcciones RX/TX y mensajes).
+
+### 4) Conectar clientes
+
+Puedes usar cualquier cliente TCP que envíe texto línea a línea.
+
+Opción A — netcat (recomendado)
+
+En PowerShell / Git Bash / MSYS2:
+
+nc 127.0.0.1 8080
+
+En Linux:
+
+nc -v ip_windows_dispo port 9000
+
+Opción B — telnet
+
+Activa la característica “Cliente Telnet” en Windows (si no está).
+
+telnet 127.0.0.1 8080
+
+Opción C — otro programa TCP
+
+Cualquier app que abra una conexión TCP y envíe líneas con \n funcionará.
+
+Al conectarte, el servidor envía:
+
+WELCOME TelemetryServer PROTO 1.0
+ROLE VIEWER
 
 
+El cliente empieza como VIEWER por defecto.
+
+### 5) Telemetría automática
+
+Cada ~10 s el servidor envía a todos los clientes una línea DATA:
+
+DATA speed=XX.X battery=XX.X temp=XX.X heading=XXX.X ts=XXXXXXXXXXXX
 
 
-### Protocolo de aplicación
+Donde:
 
-| Comando           | Descripción                                |
-| ----------------- | ------------------------------------------ |
-| `HELLO <name>`    | Identifica al cliente por nombre           |
-| `AUTH admin 1234` | Autenticación para obtener rol ADMIN       |
-| `CMD SPEED_UP`    | Incrementa la velocidad (solo ADMIN)       |
-| `CMD SLOW_DOWN`   | Disminuye la velocidad (solo ADMIN)        |
-| `CMD TURN_LEFT`   | Gira a la izquierda (solo ADMIN)           |
-| `CMD TURN_RIGHT`  | Gira a la derecha (solo ADMIN)             |
-| `USERS`           | Lista los clientes conectados (solo ADMIN) |
-| `BYE`             | Cierra la conexión limpiamente             |
+speed km/h (0–120),
+
+battery % (baja 0.2 por ciclo),
+
+temp °C (20–60),
+
+heading grados normalizados (0–360),
+
+ts timestamp en milisegundos.
+
+## Informe del Proyecto
+
+Puedes consultar el informe completo aquí:  
+[Abrir Informe de Proyecto (PDF)](./informe.pdf)
+
+---
+
+## Autoría
+
+**Proyecto académico:** Servidor de telemetría de vehículo autónomo
+**Autores:** [jk, val, isa, j]
+**Institución:** [Universidad EAFIT]
+**Año:** 2025
+
