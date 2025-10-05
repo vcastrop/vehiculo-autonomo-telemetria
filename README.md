@@ -1,7 +1,6 @@
 # Proyecto: Vehículo Autónomo Telemetría
 
-Este proyecto implementa un **servidor TCP en C** que simula la telemetría de un vehículo autónomo.  
-Permite múltiples clientes concurrentes, manejo de roles (ADMIN y VIEWER), autenticación, comandos de control, transmisión periódica de datos y registro de eventos en consola y archivo de log.
+Simulación de un vehículo autónomo, se desarrolló un protocolo de telemetría que permite transmitir información en tiempo real y recibir comandos de control bajo un modelo cliente–servidor.
 
 ---
 
@@ -30,13 +29,20 @@ El sistema cumple con los requisitos del informe:
 
 ## Guia de ejecución Servidor
 
+---
+
 ### 1) Clonar el repositorio
-git clone <URL_DEL_REPO>
-cd <CARPETA_DEL_REPO>
+
+**git clone https://github.com/vcastrop/vehiculo-autonomo-telemetria.git**
+
+---
 
 ### 2) Compilar
+
 Opción A — GCC (MinGW)
+
 gcc server.c -o server.exe -lws2_32
+
 gcc -Wall -O2 -o server src/server.c -lws2_32
 
 Opción B — Visual Studio (MSVC)
@@ -47,50 +53,47 @@ No hace falta configurar librerías adicionales.
 
 Requisitos: Windows 7+; tener MinGW o Visual Studio instalados.
 
+---
+
 ### 3) Iniciar el servidor
 Sintaxis
 
-server.exe <puerto> [archivo_log]
+**server.exe <puerto> [archivo_log]**
 
-Ejemplos
-
-Solo consola:
-
-server.exe 8080
-
-
-Consola + archivo de log:
+Ejemplo:
 
 server.exe 8080 log.txt
-
 
 El servidor escucha en 0.0.0.0:<puerto> y acepta múltiples clientes concurrentes.
 
 log.txt registra lo mismo que la consola (timestamp, IP:puerto, direcciones RX/TX y mensajes).
 
-### 4) Conectar clientes
+---
 
-Puedes usar cualquier cliente TCP que envíe texto línea a línea.
+### 4) Conectar clientes usando netcat
 
-Opción A — netcat (recomendado)
+En Windows:
+Windows incluye Ncat si tienes instalado Nmap (lo puedes descargar de: https://nmap.org/ncat/).
 
-En PowerShell / Git Bash / MSYS2:
+Luego en PowerShell / CMD, ejecuta:
 
-nc 127.0.0.1 8080
+ncat <direccion ip> 8080
 
 En Linux:
 
-nc -v ip_windows_dispo port 9000
+sudo apt install ncat
 
-Opción B — telnet
+nc -v <direccion ip> port 9000
 
-Activa la característica “Cliente Telnet” en Windows (si no está).
+en MacOS:
 
-telnet 127.0.0.1 8080
+brew install nmap
 
-Opción C — otro programa TCP
+ncat <direccion ip> 8080
 
-Cualquier app que abra una conexión TCP y envíe líneas con \n funcionará.
+Nota: en <direccion ip> escribe 127.0.0.1 si el cliente es en la misma maquina donde corre el servidor, si el cliente esta en otra maquina dentro de la misma red escribe la ip de la maquina donde corre el servidor. 
+
+Nota 2: para averiguar la ip --> ipconfig (windows) --> ifconfig 
 
 Al conectarte, el servidor envía:
 
@@ -122,7 +125,7 @@ ts timestamp en milisegundos.
 ## Informe del Proyecto
 
 Puedes consultar el informe completo aquí:  
-[Abrir Informe de Proyecto (PDF)](./informe.pdf)
+[Abrir Informe de Proyecto (PDF)](docs/informe (1).pdf)
 
 ---
 
