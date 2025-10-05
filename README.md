@@ -1,4 +1,4 @@
-# Proyecto: Servidor TCP de Telemetría de Vehículo Autónomo
+# Proyecto: Vehículo Autónomo Telemetría
 
 Este proyecto implementa un **servidor TCP en C** que simula la telemetría de un vehículo autónomo.  
 Permite múltiples clientes concurrentes, manejo de roles (ADMIN y VIEWER), autenticación, comandos de control, transmisión periódica de datos y registro de eventos en consola y archivo de log.
