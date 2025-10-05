@@ -39,63 +39,61 @@ El sistema cumple con los requisitos del informe:
 
 ### 2) Compilar
 
-Opción A — GCC (MinGW)
+**Opción A — GCC (MinGW)**
 
-gcc server.c -o server.exe -lws2_32
+- gcc server.c -o server.exe -lws2_32
 
-gcc -Wall -O2 -o server src/server.c -lws2_32
+- gcc -Wall -O2 -o server src/server.c -lws2_32
 
-Opción B — Visual Studio (MSVC)
+**Opción B — Visual Studio (MSVC)**
 
-Compila server.c en un proyecto de consola. 
+- Compila server.c en un proyecto de consola. 
 
-No hace falta configurar librerías adicionales.
+- No hace falta configurar librerías adicionales.
 
-Requisitos: Windows 7+; tener MinGW o Visual Studio instalados.
+- Requisitos: Windows 7+; tener MinGW o Visual Studio instalados.
 
 ---
 
 ### 3) Iniciar el servidor
-Sintaxis
 
-**server.exe <puerto> [archivo_log]**
+**server.exe puerto archivo_log**
 
 Ejemplo:
 
-server.exe 8080 log.txt
+**server.exe 8080 log.txt**
 
-El servidor escucha en 0.0.0.0:<puerto> y acepta múltiples clientes concurrentes.
+- El servidor escucha en 0.0.0.0:<puerto> y acepta múltiples clientes concurrentes.
 
-log.txt registra lo mismo que la consola (timestamp, IP:puerto, direcciones RX/TX y mensajes).
+- log.txt registra lo mismo que la consola (timestamp, IP:puerto, direcciones RX/TX y mensajes).
 
 ---
 
 ### 4) Conectar clientes usando netcat
 
-En Windows:
-Windows incluye Ncat si tienes instalado Nmap (lo puedes descargar de: https://nmap.org/ncat/).
+**En Windows:**
 
-Luego en PowerShell / CMD, ejecuta:
+- Windows incluye Ncat si tienes instalado Nmap (lo puedes descargar de: https://nmap.org/ncat/).
 
-ncat <direccion ip> 8080
+- Luego en PowerShell / CMD, ejecuta: ncat direccion_ip 8080
 
-En Linux:
+**En Linux:**
 
-sudo apt install ncat
+- sudo apt install ncat
+- nc -v direccion_ip port 9000
 
-nc -v <direccion ip> port 9000
+**en MacOS:**
 
-en MacOS:
+- brew install nmap
+- ncat direccion_ip 8080
 
-brew install nmap
+Nota: en direccion_ip escribe 127.0.0.1 si el cliente es en la misma maquina donde corre el servidor, si el cliente esta en otra maquina dentro de la misma red escribe la ip de la maquina donde corre el servidor. 
 
-ncat <direccion ip> 8080
+**Para ver la IP**
+- ipconfig (windows)
+- ifconfig  (linux/macOS)
 
-Nota: en <direccion ip> escribe 127.0.0.1 si el cliente es en la misma maquina donde corre el servidor, si el cliente esta en otra maquina dentro de la misma red escribe la ip de la maquina donde corre el servidor. 
-
-Nota 2: para averiguar la ip --> ipconfig (windows) --> ifconfig  (linux/macOS)
-
-Al conectarte, el servidor envía:
+**Al conectarte, el servidor envía:**
 
 WELCOME TelemetryServer PROTO 1.0
 ROLE VIEWER
@@ -108,20 +106,19 @@ El cliente empieza como VIEWER por defecto.
 
 Cada ~10 s el servidor envía a todos los clientes una línea DATA:
 
-DATA speed=XX.X battery=XX.X temp=XX.X heading=XXX.X ts=XXXXXXXXXXXX
-
+**DATA speed=XX.X battery=XX.X temp=XX.X heading=XXX.X ts=XXXXXXXXXXXX**
 
 Donde:
 
-speed km/h (0–120),
+- speed km/h (0–120),
 
-battery % (baja 0.2 por ciclo),
+- battery % (baja 0.2 por ciclo),
 
-temp °C (20–60),
+- temp °C (20–60),
 
-heading grados normalizados (0–360),
+- heading grados normalizados (0–360),
 
-ts timestamp en milisegundos.
+- ts timestamp en milisegundos.
 
 ---
 
