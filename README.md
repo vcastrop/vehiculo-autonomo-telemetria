@@ -128,7 +128,8 @@ ts timestamp en milisegundos.
 ## Informe del Proyecto
 
 Puedes consultar el informe completo aquí:  
-[informe (1)](./informe (1).pdf)
+[📘 Ver Informe del Proyecto (PDF)](./docs/informe%20(1).pdf)
+
 
 ---
 
