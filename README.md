@@ -128,14 +128,17 @@ ts timestamp en milisegundos.
 ## Informe del Proyecto
 
 Puedes consultar el informe completo aquí:  
-[Abrir Informe de Proyecto (PDF)](informe (1).pdf)
+[informe (1)](./informe (1).pdf)
 
 ---
 
 ## Autoría
 
 **Proyecto académico:** Servidor de telemetría de vehículo autónomo
+
 **Autores:** [jk, val, isa, j]
+
 **Institución:** [Universidad EAFIT]
+
 **Año:** 2025
 
