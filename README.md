@@ -43,7 +43,7 @@ El sistema cumple con los requisitos del informe:
 
 **Opción A — GCC (MinGW)**
 
-*dirigete a la direccion donde se encuentra tu seridor y ejecuta
+*dirigete a la direccion donde se encuentra tu seridor y ejecuta*
 
 - gcc -Wall -O2 -o server src/server.c -lws2_32
 
