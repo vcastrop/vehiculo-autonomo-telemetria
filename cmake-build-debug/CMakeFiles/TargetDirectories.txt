@@ -1,3 +1,0 @@
-C:/Users/ASUS/CLionProjects/vehiculo-autonomo-telemetria/cmake-build-debug/CMakeFiles/vehiculo_autonomo_telemetria.dir
-C:/Users/ASUS/CLionProjects/vehiculo-autonomo-telemetria/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/ASUS/CLionProjects/vehiculo-autonomo-telemetria/cmake-build-debug/CMakeFiles/rebuild_cache.dir
