@@ -129,7 +129,7 @@ Puedes consultar el informe completo aquí:
 
 **Proyecto académico:** Servidor de telemetría de vehículo autónomo
 
-**Autores:** [Juan Camilo Ramon Perez, Valentina Castro Pineda, Isabella Idarraga Botero y Juan Jose Rodriguez Restrepo]
+**Autores:** [Valentina Castro Pineda, Juan Camilo Ramon Perez, Isabella Idarraga Botero y Juan Jose Rodriguez Restrepo]
 
 **Institución:** [Universidad EAFIT]
 
