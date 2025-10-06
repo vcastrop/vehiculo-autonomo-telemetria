@@ -43,17 +43,9 @@ El sistema cumple con los requisitos del informe:
 
 **Opción A — GCC (MinGW)**
 
-- gcc server.c -o server.exe -lws2_32
+*dirigete a la direccion donde se encuentra tu seridor y ejecuta
 
 - gcc -Wall -O2 -o server src/server.c -lws2_32
-
-**Opción B — Visual Studio (MSVC)**
-
-- Compila server.c en un proyecto de consola. 
-
-- No hace falta configurar librerías adicionales.
-
-- Requisitos: Windows 7+; tener MinGW o Visual Studio instalados.
 
 ---
 
@@ -77,17 +69,12 @@ Ejemplo:
 
 - Windows incluye Ncat si tienes instalado Nmap (lo puedes descargar de: https://nmap.org/ncat/).
 
-- Luego en PowerShell / CMD, ejecuta: ncat direccion_ip 8080
+- Luego en PowerShell / CMD, ejecuta: ncat <direccion ip> 8080
 
 **En Linux:**
 
 - sudo apt install ncat
-- nc -v direccion_ip port 9000
-
-**en MacOS:**
-
-- brew install nmap
-- ncat direccion_ip 8080
+- nc -v <direccion ip> port 9000
 
 Nota: en direccion_ip escribe 127.0.0.1 si el cliente es en la misma maquina donde corre el servidor, si el cliente esta en otra maquina dentro de la misma red escribe la ip de la maquina donde corre el servidor. 
 
