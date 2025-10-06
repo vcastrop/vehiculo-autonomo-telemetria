@@ -6,9 +6,11 @@ Simulación de un vehículo autónomo, se desarrolló un protocolo de telemetrí
 
 ## Tabla de Contenidos
 - [Descripción General](#descripción-general)
-- [Guia de ejecución Servidor](#Guia-de-ejecución-Servidor)
-- [Informe del Proyecto](#Informe-del-Proyecto)
+- [Guia de ejecución Servidor](#guia-de-ejecución-servidor)
+- [Informe del Proyecto](#informe-del-proyecto)
+- [Video explicación](#video-explicación)
 - [Autoría](#autoría)
+  
 
 ---
 
@@ -127,6 +129,12 @@ Donde:
 Puedes consultar el informe completo aquí:  
 [📘 Ver Informe del Proyecto (PDF)](./docs/informe%20(1).pdf)
 
+
+---
+
+## Video explicación
+
+[Link youtube](https://youtu.be/O_3hcu1YBnY?si=NXtba9Y4wKAoBO-9)
 
 ---
 
