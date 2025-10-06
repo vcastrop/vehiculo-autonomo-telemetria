@@ -74,7 +74,7 @@ Ejemplo:
 **En Linux:**
 
 - sudo apt install ncat
-- nc -v <direccion ip> port 9000
+- nc -v <direccion ip> port 8080
 
 Nota: en direccion_ip escribe 127.0.0.1 si el cliente es en la misma maquina donde corre el servidor, si el cliente esta en otra maquina dentro de la misma red escribe la ip de la maquina donde corre el servidor. 
 
